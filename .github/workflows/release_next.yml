@@ -18,16 +18,20 @@ jobs:
       - name: Cache node modules
         uses: actions/cache@v2
         with:
-          path: ~/.npm
+          path: |
+            **/node_modules
           key: dependency-cache-${{ hashFiles('**/package-lock.json') }}
       - name: Restore dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
       - name: Build
         run: npm run build
       - uses: actions/upload-artifact@v2
         with:
           name: build
-          path: .
+          path: |
+            .
+            !node_modules
   test:
     needs: build
 
@@ -42,6 +46,15 @@ jobs:
         with:
           node-version: 14.15.1
           registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: |
+            **/node_modules
+          key: dependency-cache-${{ hashFiles('**/package-lock.json') }}
+      - name: Restore dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
       - name: Test
         run: npm test
       - name: Run coveralls
@@ -67,6 +80,15 @@ jobs:
         with:
           node-version: 14.15.1
           registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: |
+            **/node_modules
+          key: dependency-cache-${{ hashFiles('**/package-lock.json') }}
+      - name: Restore dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
       - name: Write .npmrc
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
       - name: Stamp beta to package version
