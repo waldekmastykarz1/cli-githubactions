@@ -35,7 +35,6 @@ jobs:
             !node_modules
   test:
     needs: build
-
     runs-on: ubuntu-latest
 
     steps:
@@ -65,8 +64,7 @@ jobs:
           name: coverage
           path: coverage
   publish_next:
-    needs: [build, test]
-    
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
@@ -94,3 +92,14 @@ jobs:
         run: echo "npm publish --tag next --access public"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  deploy_docs:
+    needs: publish_next
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/setup-python@v2
+          with:
+            python-version: 3.x
+        - run: pip install mkdocs-material==3.1.0
+        - run: pip install pymdown-extensions==6.0
+        - run: mkdocs gh-deploy -m "[ci skip]"
