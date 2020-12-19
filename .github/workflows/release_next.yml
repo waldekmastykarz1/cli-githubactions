@@ -59,10 +59,12 @@ jobs:
         run: npm ci
       - name: Test
         run: npm test
-      - name: Run coveralls
-        run: './node_modules/.bin/c8 report --reporter=text-lcov | ./node_modules/.bin/coveralls'
-        env:
-          COVERALLS_REPO_TOKEN: "GFYr8ZZpnBB79NCXeR4D4bJklZ6FrA5jx"
+      - name: Run coverage
+        run: './node_modules/.bin/c8 report --reporter=text-lcov'
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v2
         with:
           name: coverage
