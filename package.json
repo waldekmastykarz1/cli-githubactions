@@ -62,7 +62,7 @@
     }
   ],
   "contributors": [
-    "Mastykarz, Waldek <waldek@mastykarz.nl>",
+    "Mastykarz, Waldek <waldek@mastykarz.nl>"
   ],
   "dependencies": {
     "adal-node": "^0.2.1",
