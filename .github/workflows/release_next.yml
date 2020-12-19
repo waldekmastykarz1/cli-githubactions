@@ -63,7 +63,6 @@ jobs:
         run: './node_modules/.bin/c8 report --reporter=text-lcov | ./node_modules/.bin/coveralls'
         env:
           COVERALLS_REPO_TOKEN: "GFYr8ZZpnBB79NCXeR4D4bJklZ6FrA5jx"
-          COVERALLS_SERVICE_NAME: "github"
       - uses: actions/upload-artifact@v2
         with:
           name: coverage
