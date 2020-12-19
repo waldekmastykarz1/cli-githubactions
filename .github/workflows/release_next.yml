@@ -113,4 +113,3 @@ jobs:
       - run: pip install mkdocs-material==3.1.0
       - run: pip install pymdown-extensions==6.0
       - run: mkdocs gh-deploy -m "[ci skip]"
-        working-directory: docs
