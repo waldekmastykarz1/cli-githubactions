@@ -29,6 +29,8 @@ jobs:
           name: build
           path: .
   test:
+    needs: build
+
     runs-on: ubuntu-latest
 
     steps:
@@ -52,6 +54,8 @@ jobs:
           name: coverage
           path: coverage
   publish_next:
+    needs: [build, test]
+    
     runs-on: ubuntu-latest
 
     steps:
