@@ -20,7 +20,7 @@ jobs:
         with:
           path: |
             **/node_modules
-          key: dependency-cache-${{ hashFiles('**/package-lock.json') }}
+          key: node_modules-${{ hashFiles('**/npm-shrinkwrap.json') }}
       - name: Restore dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
@@ -51,7 +51,7 @@ jobs:
         with:
           path: |
             **/node_modules
-          key: dependency-cache-${{ hashFiles('**/package-lock.json') }}
+          key: node_modules-${{ hashFiles('**/npm-shrinkwrap.json') }}
       - name: Restore dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
@@ -85,7 +85,7 @@ jobs:
         with:
           path: |
             **/node_modules
-          key: dependency-cache-${{ hashFiles('**/package-lock.json') }}
+          key: node_modules-${{ hashFiles('**/npm-shrinkwrap.json') }}
       - name: Restore dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
