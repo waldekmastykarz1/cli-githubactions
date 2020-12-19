@@ -4,14 +4,18 @@ on: pull_request
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+        node: [10, 12, 14]
 
     steps:
       - uses: actions/checkout@v2
-      - name: Use Node.js 14.15.1
+      - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v1
         with:
-          node-version: 14.15.1
+          node-version: ${{ matrix.node }}
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
         id: cache
@@ -19,31 +23,35 @@ jobs:
         with:
           path: |
             **/node_modules
-          key: node_modules-${{ hashFiles('**/npm-shrinkwrap.json') }}
+          key: node_modules-${{ matrix.os }}-${{ matrix.node }}-${{ hashFiles('**/npm-shrinkwrap.json') }}
       - name: Restore dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
       - name: Build
         run: npm run build
-      - uses: actions/upload-artifact@v2
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v2
         with:
-          name: build
+          name: build-${{ matrix.os }}-${{ matrix.node }}
           path: |
             .
             !node_modules
   test:
     needs: build
-
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+        node: [10, 12, 14]
 
     steps:
       - uses: actions/download-artifact@v2
         with:
-          name: build
-      - name: Use Node.js 14.15.1
+          name: build-${{ matrix.os }}-${{ matrix.node }}
+      - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v1
         with:
-          node-version: 14.15.1
+          node-version: ${{ matrix.node }}
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
         id: cache
@@ -51,7 +59,7 @@ jobs:
         with:
           path: |
             **/node_modules
-          key: node_modules-${{ hashFiles('**/npm-shrinkwrap.json') }}
+          key: node_modules-${{ matrix.os }}-${{ matrix.node }}-${{ hashFiles('**/npm-shrinkwrap.json') }}
       - name: Restore dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
@@ -60,5 +68,6 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: ${{ always() }}
         with:
-          name: coverage
+          name: coverage-${{ matrix.os }}-${{ matrix.node }}
           path: coverage
+  
