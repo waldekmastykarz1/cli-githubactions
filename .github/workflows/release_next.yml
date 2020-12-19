@@ -33,7 +33,6 @@ jobs:
           path: |
             .
             !node_modules
-            !.git
   test:
     needs: build
 
