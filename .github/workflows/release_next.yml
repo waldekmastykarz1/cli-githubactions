@@ -1,0 +1,71 @@
+name: Release next
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js 14.15.1
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.15.1
+          registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: dependency-cache-${{ hashFiles('**/package-lock.json') }}
+      - name: Restore dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - uses: actions/upload-artifact@v2
+        with:
+          name: build
+          path: .
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: build
+      - name: Use Node.js 14.15.1
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.15.1
+          registry-url: 'https://registry.npmjs.org'
+      - name: Test:
+        run: npm test
+      - name Run coveralls:
+        run: './node_modules/.bin/c8 report --reporter=text-lcov | ./node_modules/.bin/coveralls'
+        env:
+          COVERALLS_REPO_TOKEN: "abc"
+          COVERALLS_SERVICE_NAME: "github"
+      - uses: actions/upload-artifact@v2
+        with:
+          name: coverage
+          path: coverage
+  publish_next:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: build
+      - name: Use Node.js 14.15.1
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.15.1
+          registry-url: 'https://registry.npmjs.org'
+      - name: Write .npmrc
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
+      - name: Stamp beta to package version
+        run: node scripts/update-package-version.js $(git rev-parse --short "$GITHUB_SHA")
+      - name: Publish @next
+        run: echo "npm publish --tag next --access public"
