@@ -5,110 +5,112 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  # build:
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Use Node.js 14.15.1
+  #       uses: actions/setup-node@v1
+  #       with:
+  #         node-version: 14.15.1
+  #         registry-url: 'https://registry.npmjs.org'
+  #     - name: Cache node modules
+  #       id: cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: |
+  #           **/node_modules
+  #         key: node_modules-${{ hashFiles('**/npm-shrinkwrap.json') }}
+  #     - name: Restore dependencies
+  #       if: steps.cache.outputs.cache-hit != 'true'
+  #       run: npm ci
+  #     - name: Build
+  #       run: npm run build
+  #     - name: Upload build artifact
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: build
+  #         path: |
+  #           .
+  #           !node_modules
+  #           !docs
+  #           !src
+  #     - name: Upload docs artifact
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: docs
+  #         path: |
+  #           .git
+  #           docs
+  # test:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - uses: actions/download-artifact@v2
+  #       with:
+  #         name: build
+  #     - name: Use Node.js 14.15.1
+  #       uses: actions/setup-node@v1
+  #       with:
+  #         node-version: 14.15.1
+  #         registry-url: 'https://registry.npmjs.org'
+  #     - name: Cache node modules
+  #       id: cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: |
+  #           **/node_modules
+  #         key: node_modules-${{ hashFiles('**/npm-shrinkwrap.json') }}
+  #     - name: Restore dependencies
+  #       if: steps.cache.outputs.cache-hit != 'true'
+  #       run: npm ci
+  #     - name: Test
+  #       run: npm test
+  #     - uses: actions/upload-artifact@v2
+  #       if: ${{ always() }}
+  #       with:
+  #         name: coverage
+  #         path: coverage
+  # publish_next:
+  #   needs: test
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - uses: actions/download-artifact@v2
+  #       with:
+  #         name: build
+  #     - name: Use Node.js 14.15.1
+  #       uses: actions/setup-node@v1
+  #       with:
+  #         node-version: 14.15.1
+  #         registry-url: 'https://registry.npmjs.org'
+  #     - name: Cache node modules
+  #       id: cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: |
+  #           **/node_modules
+  #         key: node_modules-${{ hashFiles('**/npm-shrinkwrap.json') }}
+  #     - name: Restore dependencies
+  #       if: steps.cache.outputs.cache-hit != 'true'
+  #       run: npm ci
+  #     - name: Stamp beta to package version
+  #       run: node scripts/update-package-version.js $(git rev-parse --short "$GITHUB_SHA")
+  #     - name: Publish @next
+  #       run: echo "npm publish --tag next --access public"
+  #       env:
+  #         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  deploy_docs:
+    # needs: publish_next
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
-      - name: Use Node.js 14.15.1
-        uses: actions/setup-node@v1
-        with:
-          node-version: 14.15.1
-          registry-url: 'https://registry.npmjs.org'
-      - name: Cache node modules
-        id: cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            **/node_modules
-          key: node_modules-${{ hashFiles('**/npm-shrinkwrap.json') }}
-      - name: Restore dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: npm ci
-      - name: Build
-        run: npm run build
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: build
-          path: |
-            .
-            !node_modules
-            !docs
-      - name: Upload docs artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: docs
-          path: |
-            .git
-            docs
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/download-artifact@v2
-        with:
-          name: build
-      - name: Use Node.js 14.15.1
-        uses: actions/setup-node@v1
-        with:
-          node-version: 14.15.1
-          registry-url: 'https://registry.npmjs.org'
-      - name: Cache node modules
-        id: cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            **/node_modules
-          key: node_modules-${{ hashFiles('**/npm-shrinkwrap.json') }}
-      - name: Restore dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: npm ci
-      - name: Test
-        run: npm test
-      - uses: actions/upload-artifact@v2
-        if: ${{ always() }}
-        with:
-          name: coverage
-          path: coverage
-  publish_next:
-    needs: test
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/download-artifact@v2
-        with:
-          name: build
-      - name: Use Node.js 14.15.1
-        uses: actions/setup-node@v1
-        with:
-          node-version: 14.15.1
-          registry-url: 'https://registry.npmjs.org'
-      - name: Cache node modules
-        id: cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            **/node_modules
-          key: node_modules-${{ hashFiles('**/npm-shrinkwrap.json') }}
-      - name: Restore dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: npm ci
-      - name: Stamp beta to package version
-        run: node scripts/update-package-version.js $(git rev-parse --short "$GITHUB_SHA")
-      - name: Publish @next
-        run: echo "npm publish --tag next --access public"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-  deploy_docs:
-    needs: publish_next
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/download-artifact@v2
-        with:
-          name: docs
+      # - uses: actions/download-artifact@v2
+      #   with:
+      #     name: docs
       - uses: actions/setup-python@v2
         with:
           python-version: 3.x
