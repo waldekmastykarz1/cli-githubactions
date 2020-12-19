@@ -1,28 +1,26 @@
 {
-  "name": "@pnp/cli-microsoft365",
+  "name": "cli-githubactions",
   "version": "3.4.0",
   "description": "Manage Microsoft 365 and SharePoint Framework projects on any platform",
   "license": "MIT",
   "main": "./dist/index.js",
   "bin": {
     "microsoft365": "./dist/index.js",
-    "m365": "./dist/index.js",
-    "m365_comp": "./dist/autocomplete.js"
+    "m365": "./dist/index.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pnp/cli-microsoft365.git"
+    "url": "git+https://github.com/waldekmastykarz/cli-githubactions.git"
   },
   "homepage": "https://pnp.github.io/cli-microsoft365/",
   "bugs": {
-    "url": "https://github.com/pnp/cli-microsoft365/issues"
+    "url": "https://github.com/waldekmastykarz/cli-githubactions/issues"
   },
   "scripts": {
     "build": "tsc -p .",
     "watch": "tsc -w -p .",
     "clean": "rimraf ./dist",
-    "test": "c8 mocha \"dist/**/*.spec.js\"",
-    "test:dev": "mocha \"dist/**/*.spec.js\""
+    "test": "c8 mocha \"dist/**/*.spec.js\""
   },
   "keywords": [
     "office 365",
@@ -41,7 +39,7 @@
     "azure",
     "microsoft"
   ],
-  "author": "https://github.com/pnp/cli-microsoft365/graphs/contributors",
+  "author": "https://github.com/waldekmastykarz/cli-githubactions/graphs/contributors",
   "maintainers": [
     {
       "name": "Waldek Mastykarz",
