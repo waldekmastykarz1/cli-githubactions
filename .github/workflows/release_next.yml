@@ -34,7 +34,6 @@ jobs:
           path: |
             .
             !node_modules
-            !src
   test:
     needs: build
     runs-on: ubuntu-latest
