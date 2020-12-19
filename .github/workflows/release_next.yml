@@ -27,12 +27,19 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
-      - uses: actions/upload-artifact@v2
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v2
         with:
           name: build
           path: |
             .
             !node_modules
+            !docs
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: build
+          path: docs
   test:
     needs: build
     runs-on: ubuntu-latest
@@ -97,9 +104,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: docs
       - uses: actions/setup-python@v2
         with:
           python-version: 3.x
       - run: pip install mkdocs-material==3.1.0
       - run: pip install pymdown-extensions==6.0
       - run: mkdocs gh-deploy -m "[ci skip]"
+        working_directory: docs
