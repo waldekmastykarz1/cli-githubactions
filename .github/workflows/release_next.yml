@@ -39,7 +39,9 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: docs
-          path: docs
+          path: |
+            .git
+            docs
   test:
     needs: build
     runs-on: ubuntu-latest
