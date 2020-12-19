@@ -1,8 +1,11 @@
-name: Release next
+name: Release
 
 on:
   push:
-    branches: [main]
+    branches:
+      - "!*"
+    tags:
+      - "v*"
 
 jobs:
   build:
@@ -33,6 +36,7 @@ jobs:
           name: build
           path: |
             .
+            !.git
             !node_modules
             !src
   test:
@@ -65,7 +69,7 @@ jobs:
         with:
           name: coverage
           path: coverage
-  publish_next:
+  publish:
     needs: test
     runs-on: ubuntu-latest
 
@@ -88,22 +92,7 @@ jobs:
       - name: Restore dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
-      - name: Stamp beta to package version
-        run: node scripts/update-package-version.js $(git rev-parse --short "$GITHUB_SHA")
       - name: Publish @next
-        run: echo "npm publish --tag next --access public"
+        run: echo "npm publish --access public"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-  deploy_docs:
-    needs: publish_next
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.x
-      - run: pip install mkdocs-material==3.1.0
-      - run: pip install pymdown-extensions==6.0
-      - run: mkdocs gh-deploy -m "[ci skip]"
-        working-directory: docs
