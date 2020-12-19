@@ -56,6 +56,12 @@ export default class Utils {
     return guidRegEx.test(guid);
   }
 
+  public static isValidUserPrincipalName(upn: string): boolean {
+    const upnRegEx = new RegExp(/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/i);
+
+    return upnRegEx.test(upn);
+  }
+
   public static isDateInRange(date: string, monthOffset: number): boolean {
     const d: Date = new Date(date);
     let cutoffDate: Date = new Date();
@@ -117,6 +123,29 @@ export default class Utils {
     return value.toLowerCase() === 'true' || value.toLowerCase() === 'false'
   }
 
+  public static getTenantIdFromAccessToken(accessToken: string): string {
+    let tenantId: string = '';
+
+    if (!accessToken || accessToken.length === 0) {
+      return tenantId;
+    }
+
+    const chunks = accessToken.split('.');
+    if (chunks.length !== 3) {
+      return tenantId;
+    }
+
+    const tokenString: string = Buffer.from(chunks[1], 'base64').toString();
+    try {
+      const token: any = JSON.parse(tokenString);
+      tenantId = token.tid;
+    }
+    catch {
+    }
+
+    return tenantId;
+  }
+
   public static getUserNameFromAccessToken(accessToken: string): string {
     let userName: string = '';
 
@@ -158,7 +187,9 @@ export default class Utils {
    */
   public static getServerRelativePath(webUrl: string, folderRelativePath: string): string {
     const tenantUrl: string = `${url.parse(webUrl).protocol}//${url.parse(webUrl).hostname}`;
-    let webRelativePath: string = webUrl.replace(tenantUrl, '');
+    // if webUrl is a server-relative URL then tenantUrl will resolve to null//null
+    // in which case we should keep webUrl
+    let webRelativePath: string = tenantUrl !== 'null//null' ? webUrl.substr(tenantUrl.length) : webUrl;
 
     // will be used to remove relative path from the folderRelativePath
     // in case the web relative url is included
@@ -248,7 +279,9 @@ export default class Utils {
     let folderWebRelativePath: string = '';
 
     const tenantUrl: string = `${url.parse(webUrl).protocol}//${url.parse(webUrl).hostname}`;
-    let webRelativePath: string = webUrl.replace(tenantUrl, '');
+    // if webUrl is a server-relative URL then tenantUrl will resolve to null//null
+    // in which case we should keep webUrl
+    let webRelativePath: string = tenantUrl !== 'null//null' ? webUrl.substr(tenantUrl.length) : webUrl;
 
     // will be used to remove relative path from the folderRelativePath
     // in case the web relative url is included
@@ -553,5 +586,14 @@ export default class Utils {
 
   public static parseJsonWithBom(s: string): any {
     return JSON.parse(s.replace(/^\uFEFF/, ''));
+  }
+
+  public static filterObject(obj: any, propertiesToInclude: string[]): any {
+    return Object.keys(obj)
+      .filter(key => propertiesToInclude.includes(key))
+      .reduce((filtered: any, key: string) => {
+        filtered[key] = obj[key];
+        return filtered;
+      }, {});
   }
 }

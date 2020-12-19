@@ -45,18 +45,18 @@ Generally, you should use the default device code flow. If you need to use a non
 
 #### Log in using a certificate
 
-Another way to log in to Microsoft 365 in the CLI for Microsoft 365 is by using a certificate. To use this authentication method, set the `CLIMICROSOFT365_AADAPPID` environment variable to the ID of the Azure AD application that you want to use to authenticate the CLI for Microsoft 365 and the `CLIMICROSOFT365_TENANT` environment variable to the ID of your Azure AD directory. When calling the login command, set the `authType` option to `certificate`, specify the path to the certificate private key using the `certificateFile` option and specify the certificate thumbprint using the `thumbprint` option.
+Another way to log in to Microsoft 365 in the CLI for Microsoft 365 is by using a certificate. To use this authentication method, set the `CLIMICROSOFT365_AADAPPID` environment variable to the ID of the Azure AD application that you want to use to authenticate the CLI for Microsoft 365 and the `CLIMICROSOFT365_TENANT` environment variable to the ID of your Azure AD directory. When calling the login command, set the `authType` option to `certificate` and specify the path to the certificate private key using the `certificateFile` option. Optionally, you can specify the certificate's thumbprint using the `thumbprint` option. If not specified, CLI will automatically calculate it from the specified certificate.
 
 To log in to Microsoft 365 using a Personal Information Exchange (.pfx) file, execute:
 
 ```sh
-m365 login --authType certificate --certificateFile /Users/user/dev/localhost.pfx --thumbprint 47C4885736C624E90491F32B98855AA8A7562AF1 --password 'pass@word1'
+m365 login --authType certificate --certificateFile /Users/user/dev/localhost.pfx --password 'pass@word1'
 ```
 
 To log in to Microsoft 365 using a Privacy Enhanced Mail (PEM) certificate, execute:
 
 ```sh
-m365 login --authType certificate --certificateFile /Users/user/dev/localhost.pem --thumbprint 47C4885736C624E90491F32B98855AA8A7562AF1
+m365 login --authType certificate --certificateFile /Users/user/dev/localhost.pem
 ```
 
 Logging in to Microsoft 365 using a certificate is convenient for automation scenarios where you cannot authenticate interactively but also don't want to use credentials.
@@ -75,16 +75,16 @@ Generally, you should use the default device code flow. If you need to use a non
 
 !!! attention
     PFX files exported from a Windows key store will not work as they are protected with either a password or Active Directory account. The private key must either be exported from the protected .pfx or newly created using 3rd party tools like OpenSSL (https://www.openssl.org/).
- 
+
 Create a new self signed certificate:
 
 ```sh
-m365 openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout privateKey.key -out certificate.cer
+openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout privateKey.key -out certificate.cer
 ```
 
 Create a new Personal Information Exchange (.pfx) file
 
-```
+```sh
 openssl pkcs12 -export -out protected.pfx -inkey privateKey.key -in certificate.cer -password pass:"pass@word1"
 ```
 
@@ -93,7 +93,7 @@ At this point the `protected.pfx` file can be used to log in the CLI for Microso
 If login with the .pfx file does not work then extract the private key from a protected .pfx and unprotect it:
 
 ```sh
-m365 openssl pkcs12 -in protected.pfx -out privateKeyWithPassphrase.pem -nodes
+openssl pkcs12 -in protected.pfx -out privateKeyWithPassphrase.pem -nodes
 ```
 
 At this point the `privateKeyWithPassphrase.pem` file can be used to log in the CLI for Microsoft 365 following the instructions above for logging in using a PEM certificate.
@@ -130,7 +130,7 @@ CLI for Microsoft 365 uses the _PnP Microsoft 365 Management Shell_ Azure AD app
 To re-consent the _PnP Microsoft 365 Management Shell_ application in your Azure AD, in the command line execute:
 
 ```sh
-m365 o365 cli reconsent
+m365 cli reconsent
 ```
 
 CLI for Microsoft 365 will provide you with a URL that you should open in the web browser and sign in with your organizational account. After authenticating, Azure AD will prompt you to approve the new set of permissions. Once you approved the permissions, you will be redirected to an empty page. You can now use all commands in the CLI for Microsoft 365.

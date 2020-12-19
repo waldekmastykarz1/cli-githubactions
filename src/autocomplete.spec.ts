@@ -1,13 +1,13 @@
-import * as sinon from 'sinon';
 import * as assert from 'assert';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import Utils from './Utils';
-import { SinonSandbox } from 'sinon';
 import { fail } from 'assert';
-import { Cli, CommandInstance } from './cli';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import * as sinon from 'sinon';
+import { SinonSandbox } from 'sinon';
+import { Cli, Logger } from './cli';
 import Command, { CommandOption } from './Command';
+import Utils from './Utils';
 
 class SimpleCommand extends Command {
   public get name(): string {
@@ -16,7 +16,7 @@ class SimpleCommand extends Command {
   public get description(): string {
     return 'Mock command'
   }
-  public commandAction(cmd: CommandInstance, args: any, cb: () => void): void {
+  public commandAction(logger: Logger, args: any, cb: () => void): void {
     cb();
   }
 }
@@ -39,7 +39,7 @@ class CommandWithOptions extends Command {
     const parentOptions: CommandOption[] = super.options();
     return options.concat(parentOptions);
   }
-  public commandAction(cmd: CommandInstance, args: any, cb: () => void): void {
+  public commandAction(logger: Logger, args: any, cb: () => void): void {
     cb();
   }
 }
@@ -54,7 +54,7 @@ class CommandWithAlias extends Command {
   public alias(): string[] | undefined {
     return ['cli alias'];
   }
-  public commandAction(cmd: CommandInstance, args: any, cb: () => void): void {
+  public commandAction(logger: Logger, args: any, cb: () => void): void {
     cb();
   }
 }
@@ -169,7 +169,7 @@ describe('autocomplete', () => {
     (cli as any).loadCommand(new SimpleCommand());
     const clink: string = autocomplete.getClinkCompletion();
 
-    assert.equal(clink, [
+    assert.strictEqual(clink, [
       'local parser = clink.arg.new_parser',
       'local m365_parser = parser({"cli"..parser({"mock"..parser({},"--debug", "--help", "--output"..parser({"json","text"}), "--query", "--verbose", "-h", "-o"..parser({"json","text"}))})})',
       '',
@@ -182,7 +182,7 @@ describe('autocomplete', () => {
     (cli as any).loadCommand(new CommandWithOptions());
     const clink: string = autocomplete.getClinkCompletion();
 
-    assert.equal(clink, [
+    assert.strictEqual(clink, [
       'local parser = clink.arg.new_parser',
       'local m365_parser = parser({"cli"..parser({"mock2"..parser({},"--debug", "--help", "--longOption", "--output"..parser({"json","text"}), "--query", "--verbose", "-h", "-l", "-o"..parser({"json","text"}))})})',
       '',
@@ -195,7 +195,7 @@ describe('autocomplete', () => {
     (cli as any).loadCommand(new CommandWithOptions());
     const clink: string = autocomplete.getClinkCompletion();
 
-    assert.equal(clink, [
+    assert.strictEqual(clink, [
       'local parser = clink.arg.new_parser',
       'local m365_parser = parser({"cli"..parser({"mock2"..parser({},"--debug", "--help", "--longOption", "--output"..parser({"json","text"}), "--query", "--verbose", "-h", "-l", "-o"..parser({"json","text"}))})})',
       '',
@@ -208,7 +208,7 @@ describe('autocomplete', () => {
     (cli as any).loadCommand(new CommandWithOptions());
     const clink: string = autocomplete.getClinkCompletion();
 
-    assert.equal(clink, [
+    assert.strictEqual(clink, [
       'local parser = clink.arg.new_parser',
       'local m365_parser = parser({"cli"..parser({"mock2"..parser({},"--debug", "--help", "--longOption", "--output"..parser({"json","text"}), "--query", "--verbose", "-h", "-l", "-o"..parser({"json","text"}))})})',
       '',
@@ -221,7 +221,7 @@ describe('autocomplete', () => {
     (cli as any).loadCommand(new CommandWithAlias());
     const clink: string = autocomplete.getClinkCompletion();
 
-    assert.equal(clink, [
+    assert.strictEqual(clink, [
       'local parser = clink.arg.new_parser',
       'local m365_parser = parser({"cli"..parser({"alias"..parser({},"--debug", "--help", "--output"..parser({"json","text"}), "--query", "--verbose", "-h", "-o"..parser({"json","text"})),"mock"..parser({},"--debug", "--help", "--output"..parser({"json","text"}), "--query", "--verbose", "-h", "-o"..parser({"json","text"}))})})',
       '',
@@ -256,7 +256,7 @@ describe('autocomplete', () => {
     const readFileSyncStub = sinon.stub(fs, 'readFileSync').callsFake((path, encoding) => '');
     (autocomplete as any).init();
     try {
-      assert.equal(JSON.stringify((autocomplete as any).commands), JSON.stringify({}));
+      assert.strictEqual(JSON.stringify((autocomplete as any).commands), JSON.stringify({}));
     }
     catch (e) {
       fail(e);

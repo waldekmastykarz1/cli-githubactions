@@ -1,15 +1,16 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import * as minimist from 'minimist';
-import * as jmespath from 'jmespath';
 import * as chalk from 'chalk';
-import * as inquirer from 'inquirer';
-import * as markshell from 'markshell';
-import Table = require('easy-table');
-import Command, { CommandError, CommandValidate } from '../Command';
+import * as fs from 'fs';
+import type { Inquirer } from 'inquirer';
+import type * as JMESPath from 'jmespath';
+import type * as Markshell from 'markshell';
+import * as minimist from 'minimist';
+import * as os from 'os';
+import * as path from 'path';
+import { Logger } from '.';
+import Command, { CommandError } from '../Command';
 import { CommandInfo } from './CommandInfo';
 import { CommandOptionInfo } from './CommandOptionInfo';
+import Utils from '../Utils';
 const packageJSON = require('../../package.json');
 
 export class Cli {
@@ -21,7 +22,7 @@ export class Cli {
   /**
    * Name of the command specified through args
    */
-  private currentCommandName: string | undefined;
+  public currentCommandName: string | undefined;
   private optionsFromArgs: { options: minimist.ParsedArgs } | undefined;
   private commandsFolder: string = '';
   private static instance: Cli;
@@ -128,75 +129,62 @@ export class Cli {
       }
     }
 
-    // validate using command's validate method if specified
-    const validate: CommandValidate | undefined = this.commandToExecute.command.validate();
-    if (validate) {
-      const validationResult: boolean | string = validate(this.optionsFromArgs);
-      if (typeof validationResult === 'string') {
-        return this.closeWithError(validationResult, true);
-      }
+    const validationResult: boolean | string = this.commandToExecute.command.validate(this.optionsFromArgs);
+    if (typeof validationResult === 'string') {
+      return this.closeWithError(validationResult, true);
     }
 
     return Cli
-      .executeCommand(this.commandToExecute.name, this.commandToExecute.command, this.optionsFromArgs)
+      .executeCommand(this.commandToExecute.command, Cli.removeShortOptions(this.optionsFromArgs))
       .then(_ => process.exit(0), err => this.closeWithError(err));
   }
 
-  public static executeCommand(commandName: string, command: Command, args: any): Promise<void> {
+  public static executeCommand(command: Command, args: { options: minimist.ParsedArgs }): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: any) => void): void => {
-      const commandInstance = {
-        commandWrapper: {
-          command: commandName
-        },
-        action: command.action(),
+      const logger: Logger = {
         log: (message: any): void => {
-          const output: any = Cli.logOutput(message, args.options);
+          const output: any = Cli.formatOutput(message, args.options);
           Cli.log(output);
         },
-        prompt: (options: any, cb: (result: any) => void) => {
-          inquirer
-            .prompt(options)
-            .then(result => cb(result));
-        }
+        logRaw: (message: any): void => Cli.log(message),
+        logToStderr: (message: any): void => Cli.error(message)
       };
 
-      if (args.debug) {
-        commandInstance.log(`Executing command ${command.name} with options ${JSON.stringify(args)}`);
+      if (args.options.debug) {
+        logger.logToStderr(`Executing command ${command.name} with options ${JSON.stringify(args)}`);
       }
 
-      commandInstance.action({ options: args }, (err: any): void => {
-        if (err) {
-          return reject(err);
-        }
+      command
+        .action(logger, args as any, (err: any): void => {
+          if (err) {
+            return reject(err);
+          }
 
-        resolve();
-      });
+          resolve();
+        });
     });
   }
 
-  public static executeCommandWithOutput(commandName: string, command: Command, args: any): Promise<string> {
+  public static executeCommandWithOutput(command: Command, args: { options: minimist.ParsedArgs }): Promise<string> {
     return new Promise((resolve: (result: string) => void, reject: (error: any) => void): void => {
       const log: string[] = [];
-      const commandInstance = {
-        commandWrapper: {
-          command: commandName
-        },
-        action: command.action(),
+      const logger: Logger = {
         log: (message: any): void => {
           log.push(message);
         },
-        prompt: (options: any, cb: (result: any) => void) => {
-          inquirer
-            .prompt(options)
-            .then(result => cb(result));
+        logRaw: (message: any): void => {
+          log.push(message);
+        },
+        logToStderr: (message: any): void => {
+          log.push(message);
         }
       };
 
-      if (args.debug) {
+      if (args.options.debug) {
         Cli.log(`Executing command ${command.name} with options ${JSON.stringify(args)}`);
       }
 
-      commandInstance.action({ options: args }, (err: any): void => {
+      command.action(logger, args as any, (err: any): void => {
         if (err) {
           return reject(err);
         }
@@ -227,8 +215,7 @@ export class Cli {
   };
 
   /**
-   * Loads command files into CLI. If can't find a command matching the specified
-   * args, loads all available commands.
+   * Loads command files into CLI based on the specified arguments.
    * 
    * @param commandNameWords Array of words specified as args
    */
@@ -259,6 +246,16 @@ export class Cli {
       }
     }
 
+    this.loadCommandFromFile(commandFilePath);
+  }
+
+  /**
+   * Loads command from the specified file into CLI. If can't find the file
+   * or the file doesn't contain a command, loads all available commands.
+   * 
+   * @param commandFilePath File path of the file with command to load
+   */
+  private loadCommandFromFile(commandFilePath: string): void {
     if (!fs.existsSync(commandFilePath)) {
       this.loadAllCommands();
       return;
@@ -289,7 +286,8 @@ export class Cli {
       aliases: command.alias(),
       name: command.name,
       command: command,
-      options: this.getCommandOptions(command)
+      options: this.getCommandOptions(command),
+      defaultProperties: command.defaultProperties()
     });
   }
 
@@ -347,7 +345,7 @@ export class Cli {
     return minimist(args, minimistOptions);
   }
 
-  private static logOutput(logStatement: any, options: any): any {
+  private static formatOutput(logStatement: any, options: any): any {
     if (logStatement instanceof Date) {
       return logStatement.toString();
     }
@@ -358,13 +356,25 @@ export class Cli {
       return logStatement;
     }
 
+    // we need to get the list of object's properties to see if the specified
+    // JMESPath query (if any) filters object's properties or not. We need to
+    // know this in order to decide if we should use default command's
+    // properties or custom ones from JMESPath
+    const originalObject: any = Array.isArray(logStatement) ? Cli.getFirstNonUndefinedArrayItem(logStatement) : logStatement;
+    const originalProperties: string[] = originalObject ? Object.getOwnPropertyNames(originalObject) : [];
+
     if (options.query &&
       !options.help) {
+      const jmespath: typeof JMESPath = require('jmespath');
       logStatement = jmespath.search(logStatement, options.query);
     }
 
     if (options.output === 'json') {
       return JSON.stringify(logStatement, null, 2);
+    }
+
+    if (logStatement instanceof CommandError) {
+      return chalk.red(`Error: ${logStatement.message}`);
     }
 
     let arrayType: string = '';
@@ -374,6 +384,11 @@ export class Cli {
     }
     else {
       for (let i: number = 0; i < logStatement.length; i++) {
+        if (Array.isArray(logStatement[i])) {
+          arrayType = 'array';
+          break;
+        }
+
         const t: string = typeof logStatement[i];
         if (t !== 'undefined') {
           arrayType = t;
@@ -386,6 +401,35 @@ export class Cli {
       return logStatement.join(os.EOL);
     }
 
+    // if output type has not been set or set to 'text', process the retrieved
+    // data so that returned objects contain only default properties specified
+    // on the current command. If there is no current command or the
+    // command doesn't specify default properties, return original data
+    if (!options.output || options.output === 'text') {
+      const cli: Cli = Cli.getInstance();
+      const currentCommand: CommandInfo | undefined = cli.commandToExecute;
+
+      if (arrayType === 'object' &&
+        currentCommand && currentCommand.defaultProperties) {
+        // the log statement contains the same properties as the original object
+        // so it can be filtered following the default properties specified on
+        // the command
+        if (JSON.stringify(originalProperties) === JSON.stringify(Object.getOwnPropertyNames(logStatement[0]))) {
+          // in some cases we return properties wrapped in `value` array
+          // returned by the API. We'll remove it in the future, but for now
+          // we'll use a workaround to drop the `value` array here
+          if (logStatement[0].value &&
+            Array.isArray(logStatement[0].value)) {
+            logStatement = logStatement[0].value;
+          }
+
+          logStatement = logStatement.map((s: any) =>
+            Utils.filterObject(s, currentCommand.defaultProperties as string[]));
+        }
+      }
+    }
+
+    // display object as a list of key-value pairs
     if (logStatement.length === 1) {
       const obj: any = logStatement[0];
       const propertyNames: string[] = [];
@@ -407,8 +451,10 @@ export class Cli {
 
       return output.join('\n') + '\n';
     }
+    // display object as a table where each property is a column
     else {
-      const t: Table = new Table();
+      const Table = require('easy-table');
+      const t = new Table();
       logStatement.forEach((r: any) => {
         if (typeof r !== 'object') {
           return;
@@ -422,6 +468,17 @@ export class Cli {
 
       return t.toString();
     }
+  }
+
+  private static getFirstNonUndefinedArrayItem(arr: any[]): any {
+    for (let i: number = 0; i < arr.length; i++) {
+      const a: any = arr[i];
+      if (typeof a !== 'undefined') {
+        return a;
+      }
+    }
+
+    return undefined;
   }
 
   private printHelp(exitCode: number = 0, std: any = Cli.log): void {
@@ -441,12 +498,11 @@ export class Cli {
   }
 
   private printCommandHelp(): void {
-    if (!this.optionsFromArgs) {
-      return;
-    }
-
     let helpFilePath = '';
-    const commandNameWords = this.optionsFromArgs.options._;
+    let commandNameWords: string[] = [];
+    if (this.commandToExecute) {
+      commandNameWords = (this.commandToExecute.name).split(' ');
+    }
     const pathChunks: string[] = [this.commandsFolder, '..', '..', 'docs', 'docs', 'cmd'];
 
     if (commandNameWords.length === 1) {
@@ -465,6 +521,23 @@ export class Cli {
 
     if (fs.existsSync(helpFilePath)) {
       Cli.log();
+
+      // because of prism, loading markshell slows down CLI a lot
+      // let's lazy-load it only when it's needed (help was requested)
+      const markshell: typeof Markshell = require('markshell');
+      const theme = markshell.getTheme();
+      const admonitionStyles = theme.admonitions.getStyles();
+      admonitionStyles.indent.beforeIndent = 0;
+      admonitionStyles.indent.titleIndent = 3;
+      admonitionStyles.indent.afterIndent = 0;
+      theme.admonitions.setStyles(admonitionStyles);
+      theme.indents.definitionList = 2;
+      theme.headline = chalk.white;
+      theme.inlineCode = chalk.cyan;
+      theme.sourceCodeTheme = 'solarizelight';
+      theme.includePath = path.join(this.commandsFolder, '..', '..', 'docs');
+      markshell.setTheme(theme);
+
       Cli.log(markshell.toRawContent(helpFilePath));
     }
   }
@@ -555,7 +628,16 @@ export class Cli {
       Cli.log(`Commands groups:`);
       Cli.log();
 
-      for (let commandGroup in commandGroupsToPrint) {
+      // sort commands groups (because of aliased commands)
+      const sortedCommandGroupsToPrint = Object
+        .keys(commandGroupsToPrint)
+        .sort()
+        .reduce((object: { [group: string]: number }, key: string) => {
+          object[key] = commandGroupsToPrint[key];
+          return object;
+        }, {});
+
+      for (let commandGroup in sortedCommandGroupsToPrint) {
         Cli.log(`  ${`${commandGroup} *`.padEnd(maxLength, ' ')}  ${commandGroupsToPrint[commandGroup]} command${commandGroupsToPrint[commandGroup] === 1 ? '' : 's'}`);
       }
     }
@@ -576,7 +658,6 @@ export class Cli {
     else {
       Cli.error(chalk.red(`Error: ${error}`));
     }
-    Cli.error(os.EOL);
 
     if (showHelp) {
       Cli.log();
@@ -587,7 +668,9 @@ export class Cli {
     }
 
     // will never be run. Required for testing where we're stubbing process.exit
+    /* c8 ignore next */
     return Promise.reject();
+    /* c8 ignore next */
   }
 
   private static log(message?: any, ...optionalParams: any[]): void {
@@ -601,5 +684,21 @@ export class Cli {
 
   private static error(message?: any, ...optionalParams: any[]): void {
     console.error(message, ...optionalParams);
+  }
+
+  public static prompt(options: any, cb: (result: any) => void): void {
+    const inquirer: Inquirer = require('inquirer');
+    inquirer
+      .prompt(options)
+      .then(result => cb(result));
+  }
+
+  private static removeShortOptions(args: { options: minimist.ParsedArgs }): any {
+    const filteredArgs = JSON.parse(JSON.stringify(args));
+    const optionsToRemove: string[] = Object.getOwnPropertyNames(args.options)
+      .filter(option => option.length === 1 || option === '--');
+    optionsToRemove.forEach(option => delete filteredArgs.options[option]);
+
+    return filteredArgs;
   }
 }

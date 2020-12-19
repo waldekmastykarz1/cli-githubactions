@@ -12,6 +12,9 @@
     "noImplicitReturns": true
   },
   "exclude": [
+    "./**/test-projects",
+    "./**/pcf-init/assets",
+    "./**/solution-init/assets",
     "node_modules"
   ]
 }

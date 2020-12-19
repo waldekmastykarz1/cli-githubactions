@@ -40,7 +40,7 @@ Some options are required and necessary for the particular command to execute, w
 In cases, when the option's value contains spaces, it should be wrapped in quotes. For example, to create a modern team site for the _CLI for Microsoft 365_ team, you would execute in the shell:
 
 ```sh
-m365 m365 spo site add --alias office365cli --title "CLI for Microsoft 365"
+m365 spo site add --alias office365cli --title "CLI for Microsoft 365"
 ```
 
 When the value, that you want to provide contains quotes, it needs to be wrapped in quotes as well, for example to pass a JSON value in the CLI prompt, you would execute:
@@ -52,27 +52,27 @@ m365 spo sitescript add --title "Contoso" --description "Contoso theme script" -
 If you use the CLI for Microsoft 365 in Bash, the outer pair of quotes will be processed by Bash so the value needs to be wrapped in an additional pair of quotes, for example:
 
 ```sh
-m365 m365 spo sitescript add --title "Contoso" --description "Contoso theme script" --content '`{"abc": "def"}`'
+m365 spo sitescript add --title "Contoso" --description "Contoso theme script" --content '`{"abc": "def"}`'
 ```
 
 ## Verbose and debug mode
 
-By default, commands output only the information returned by the corresponding Microsoft 365 API, whether the command result or error. You can choose for a more user-friendly output by using the `--verbose` option or setting the `OFFICE365CLI_VERBOSE` environment variable to `1`. For example: by default, when checking status of the Microsoft 365 Public CDN, you would see:
+By default, commands output only the information returned by the corresponding Microsoft 365 API, whether the command result or error. You can choose for a more user-friendly output by using the `--verbose` option or setting the `CLIMICROSOFT365_VERBOSE` environment variable to `1`. For example: by default, when checking status of the Microsoft 365 Public CDN, you would see:
 
 ```sh
-m365 $ m365 spo cdn get
+$ m365 spo cdn get
 true
 ```
 
 After adding the `--verbose` option, the output would change to:
 
 ```sh
-m365 $ m365 spo cdn get --verbose
+$ m365 spo cdn get --verbose
 Retrieving status of Public CDN...
 Public CDN at https://contoso-admin.sharepoint.com is enabled
 ```
 
-If you're experiencing problems when using the CLI for Microsoft 365, you can use the `--debug` option or set the `OFFICE365CLI_DEBUG` environment variable to `1`. On top of the output from the verbose mode, the debug mode will provide you with detailed information about all requests and responses from the Microsoft 365 APIs used by the command.
+If you're experiencing problems when using the CLI for Microsoft 365, you can use the `--debug` option or set the `CLIMICROSOFT365_DEBUG` environment variable to `1`. On top of the output from the verbose mode, the debug mode will provide you with detailed information about all requests and responses from the Microsoft 365 APIs used by the command.
 
 ## Command completion
 
